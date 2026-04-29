@@ -419,9 +419,9 @@ class TestPaginationHelperBranches:
 class TestToolValidationBranches:
     @pytest.mark.asyncio
     async def test_translate_tools_are_not_exposed(self):
-        tools = await mcp.get_tools()
-        assert "translate_oci_sdk_call" not in tools
-        assert "translate_oci_sdk_procedure" not in tools
+        tool_names = {tool.name for tool in await mcp.list_tools()}
+        assert "translate_oci_sdk_call" not in tool_names
+        assert "translate_oci_sdk_procedure" not in tool_names
 
     @pytest.mark.asyncio
     async def test_find_oci_api_validates_limit_and_query(self):

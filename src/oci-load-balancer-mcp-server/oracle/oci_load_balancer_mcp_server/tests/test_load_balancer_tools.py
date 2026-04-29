@@ -248,7 +248,7 @@ async def test_list_load_balancers(mock_client):
     mock_lb = types.SimpleNamespace(id="lb_ocid")
     mock_client.list_load_balancers.return_value = MockResponse(data=[mock_lb])
 
-    result = server.list_load_balancers.fn(
+    result = server.list_load_balancers(
         compartment_id="compartment_ocid",
         limit=None,
         lifecycle_state=None,
@@ -269,7 +269,7 @@ async def test_list_load_balancers_pagination(mock_client):
     page2 = MockResponse(data=[types.SimpleNamespace(id="lb2")], next_page=None)
     mock_client.list_load_balancers.side_effect = [page1, page2]
 
-    result = server.list_load_balancers.fn(
+    result = server.list_load_balancers(
         compartment_id="compartment_ocid",
         limit=None,
     )
@@ -284,7 +284,7 @@ async def test_list_load_balancers_limit_stops_early(mock_client):
         next_page="token",
     )
     mock_client.list_load_balancers.return_value = page1
-    out = server.list_load_balancers.fn(compartment_id="c", limit=1)
+    out = server.list_load_balancers(compartment_id="c", limit=1)
     assert [lb.id for lb in out] == ["lb1"]
     mock_client.list_load_balancers.assert_called_once()
 
@@ -295,7 +295,7 @@ async def test_get_load_balancer_listener_not_found(mock_client):
         data=types.SimpleNamespace(listeners={})
     )
     with pytest.raises(ValueError):
-        server.get_load_balancer_listener.fn(
+        server.get_load_balancer_listener(
             load_balancer_id="lb_ocid", listener_name="missing"
         )
 
@@ -303,7 +303,7 @@ async def test_get_load_balancer_listener_not_found(mock_client):
 @pytest.mark.asyncio
 async def test_create_listener_with_ssl_and_conn_config(mock_client):
     mock_client.create_listener.return_value = MockResponse(data={})
-    result = server.create_load_balancer_listener.fn(
+    result = server.create_load_balancer_listener(
         load_balancer_id="lb_ocid",
         name="lsn",
         default_backend_set_name="bs1",
@@ -328,13 +328,13 @@ async def test_update_load_balancer_shape_and_nsgs(mock_client):
     mock_client.update_load_balancer_shape.return_value = MockResponse(data={})
     mock_client.update_network_security_groups.return_value = MockResponse(data={})
 
-    r1 = server.update_load_balancer_shape.fn(
+    r1 = server.update_load_balancer_shape(
         load_balancer_id="lb_ocid",
         shape_name="Flexible",
         minimum_bandwidth_in_mbps=10,
         maximum_bandwidth_in_mbps=100,
     )
-    r2 = server.update_load_balancer_network_security_groups.fn(
+    r2 = server.update_load_balancer_network_security_groups(
         load_balancer_id="lb_ocid", network_security_group_ids=["nsg1"]
     )
     assert r1 is not None and r2 is not None
@@ -343,7 +343,7 @@ async def test_update_load_balancer_shape_and_nsgs(mock_client):
 @pytest.mark.asyncio
 async def test_update_load_balancer_shape_name_only(mock_client):
     mock_client.update_load_balancer_shape.return_value = MockResponse(data={})
-    out = server.update_load_balancer_shape.fn(
+    out = server.update_load_balancer_shape(
         load_balancer_id="lb", shape_name="100Mbps"
     )
     assert out is not None
@@ -352,7 +352,7 @@ async def test_update_load_balancer_shape_name_only(mock_client):
 @pytest.mark.asyncio
 async def test_update_load_balancer_shape_bandwidth_only(mock_client):
     mock_client.update_load_balancer_shape.return_value = MockResponse(data={})
-    out = server.update_load_balancer_shape.fn(
+    out = server.update_load_balancer_shape(
         load_balancer_id="lb",
         minimum_bandwidth_in_mbps=10,
         maximum_bandwidth_in_mbps=20,
@@ -363,7 +363,7 @@ async def test_update_load_balancer_shape_bandwidth_only(mock_client):
 @pytest.mark.asyncio
 async def test_update_load_balancer_network_security_groups_none(mock_client):
     mock_client.update_network_security_groups.return_value = MockResponse(data={})
-    out = server.update_load_balancer_network_security_groups.fn(
+    out = server.update_load_balancer_network_security_groups(
         load_balancer_id="lb", network_security_group_ids=None
     )
     assert out is not None
@@ -378,13 +378,13 @@ async def test_limits_on_listing_helpers(mock_client):
             listeners={"listener1": mock_listener, "l2": mock_listener}
         )
     )
-    ls = server.list_load_balancer_listeners.fn(load_balancer_id="lb", limit=1)
+    ls = server.list_load_balancer_listeners(load_balancer_id="lb", limit=1)
     assert len(ls) == 1
 
     # backend sets limit
     mock_bs = types.SimpleNamespace(name="bs1")
     mock_client.list_backend_sets.return_value = MockResponse(data=[mock_bs, mock_bs])
-    bss = server.list_load_balancer_backend_sets.fn(load_balancer_id="lb", limit=1)
+    bss = server.list_load_balancer_backend_sets(load_balancer_id="lb", limit=1)
     assert len(bss) == 1
 
     # backends limit
@@ -392,7 +392,7 @@ async def test_limits_on_listing_helpers(mock_client):
     mock_client.list_backends.return_value = MockResponse(
         data=[mock_backend, mock_backend]
     )
-    bs = server.list_backends.fn(load_balancer_id="lb", backend_set_name="bs", limit=1)
+    bs = server.list_backends(load_balancer_id="lb", backend_set_name="bs", limit=1)
     assert len(bs) == 1
 
     # certificates limit
@@ -400,7 +400,7 @@ async def test_limits_on_listing_helpers(mock_client):
     mock_client.list_certificates.return_value = MockResponse(
         data=[mock_cert, mock_cert]
     )
-    certs = server.list_load_balancer_certificates.fn(load_balancer_id="lb", limit=1)
+    certs = server.list_load_balancer_certificates(load_balancer_id="lb", limit=1)
     assert len(certs) == 1
 
     # cipher suites limit
@@ -408,19 +408,19 @@ async def test_limits_on_listing_helpers(mock_client):
     mock_client.list_ssl_cipher_suites.return_value = MockResponse(
         data=[mock_suite, mock_suite]
     )
-    suites = server.list_ssl_cipher_suites.fn(load_balancer_id="lb", limit=1)
+    suites = server.list_ssl_cipher_suites(load_balancer_id="lb", limit=1)
     assert len(suites) == 1
 
     # hostnames limit
     mock_host = types.SimpleNamespace(name="h")
     mock_client.list_hostnames.return_value = MockResponse(data=[mock_host, mock_host])
-    hosts = server.list_hostnames.fn(load_balancer_id="lb", limit=1)
+    hosts = server.list_hostnames(load_balancer_id="lb", limit=1)
     assert len(hosts) == 1
 
     # rule sets limit
     mock_rs = types.SimpleNamespace(name="rs")
     mock_client.list_rule_sets.return_value = MockResponse(data=[mock_rs, mock_rs])
-    rss = server.list_rule_sets.fn(load_balancer_id="lb", limit=1)
+    rss = server.list_rule_sets(load_balancer_id="lb", limit=1)
     assert len(rss) == 1
 
 
@@ -430,7 +430,7 @@ async def test_pagination_helpers(mock_client):
     rp1 = MockResponse(data=[types.SimpleNamespace(name="p1")], next_page="n1")
     rp2 = MockResponse(data=[types.SimpleNamespace(name="p2")], next_page=None)
     mock_client.list_routing_policies.side_effect = [rp1, rp2]
-    rps = server.list_routing_policies.fn(load_balancer_id="lb", limit=None)
+    rps = server.list_routing_policies(load_balancer_id="lb", limit=None)
     assert [p.name for p in rps] == ["p1", "p2"]
 
     # health summaries pagination
@@ -441,14 +441,14 @@ async def test_pagination_helpers(mock_client):
         data=[types.SimpleNamespace(load_balancer_id="b")], next_page=None
     )
     mock_client.list_load_balancer_healths.side_effect = [hs1, hs2]
-    healths = server.list_load_balancer_healths.fn(compartment_id="c", limit=None)
+    healths = server.list_load_balancer_healths(compartment_id="c", limit=None)
     assert [h.load_balancer_id for h in healths] == ["a", "b"]
 
     # work requests pagination
     wr1 = MockResponse(data=[types.SimpleNamespace(id="w1")], next_page="n1")
     wr2 = MockResponse(data=[types.SimpleNamespace(id="w2")], next_page=None)
     mock_client.list_work_requests.side_effect = [wr1, wr2]
-    wrs = server.list_load_balancer_work_requests.fn(load_balancer_id="lb", limit=None)
+    wrs = server.list_load_balancer_work_requests(load_balancer_id="lb", limit=None)
     assert [w.id for w in wrs] == ["w1", "w2"]
 
 
@@ -459,7 +459,7 @@ async def test_limit_helpers_stop_after_first_page(mock_client):
         data=[types.SimpleNamespace(name="p1"), types.SimpleNamespace(name="p2")],
         next_page="n1",
     )
-    rps = server.list_routing_policies.fn(load_balancer_id="lb", limit=1)
+    rps = server.list_routing_policies(load_balancer_id="lb", limit=1)
     assert [p.name for p in rps] == ["p1"]
     mock_client.list_routing_policies.assert_called_once()
 
@@ -471,7 +471,7 @@ async def test_limit_helpers_stop_after_first_page(mock_client):
         ],
         next_page="n1",
     )
-    hs = server.list_load_balancer_healths.fn(compartment_id="c", limit=1)
+    hs = server.list_load_balancer_healths(compartment_id="c", limit=1)
     assert [h.load_balancer_id for h in hs] == ["a"]
     mock_client.list_load_balancer_healths.assert_called_once()
 
@@ -480,7 +480,7 @@ async def test_limit_helpers_stop_after_first_page(mock_client):
         data=[types.SimpleNamespace(id="w1"), types.SimpleNamespace(id="w2")],
         next_page="n1",
     )
-    wrs = server.list_load_balancer_work_requests.fn(load_balancer_id="lb", limit=1)
+    wrs = server.list_load_balancer_work_requests(load_balancer_id="lb", limit=1)
     assert [w.id for w in wrs] == ["w1"]
     mock_client.list_work_requests.assert_called_once()
 
@@ -490,7 +490,7 @@ async def test_get_load_balancer(mock_client):
     mock_lb = types.SimpleNamespace(id="lb_ocid")
     mock_client.get_load_balancer.return_value = MockResponse(data=mock_lb)
 
-    result = server.get_load_balancer.fn(load_balancer_id="lb_ocid")
+    result = server.get_load_balancer(load_balancer_id="lb_ocid")
     mock_client.get_load_balancer.assert_called_once_with("lb_ocid")
     assert result.id == "lb_ocid"
 
@@ -500,13 +500,13 @@ async def test_error_paths_raise_and_log(mock_client):
     # Simulate client raising to drive except blocks
     mock_client.get_backend.side_effect = RuntimeError("boom")
     with pytest.raises(RuntimeError):
-        server.get_backend.fn(
+        server.get_backend(
             load_balancer_id="lb", backend_set_name="bs", backend_name="ip:1"
         )
 
     mock_client.create_ssl_cipher_suite.side_effect = ValueError("bad")
     with pytest.raises(ValueError):
-        server.create_ssl_cipher_suite.fn(
+        server.create_ssl_cipher_suite(
             load_balancer_id="lb", name="s", ciphers=["c"]
         )
 
@@ -516,7 +516,7 @@ async def test_create_load_balancer(mock_client):
     mock_resp = MagicMock()
     mock_client.create_load_balancer.return_value = MockResponse(data=mock_resp)
 
-    result = server.create_load_balancer.fn(
+    result = server.create_load_balancer(
         compartment_id="compartment_ocid",
         display_name="test-lb",
         shape_name="100Mbps",
@@ -539,7 +539,7 @@ async def test_update_load_balancer(mock_client):
     mock_resp = MagicMock()
     mock_client.update_load_balancer.return_value = MockResponse(data=mock_resp)
 
-    result = server.update_load_balancer.fn(
+    result = server.update_load_balancer(
         load_balancer_id="lb_ocid",
         display_name="new-name",
         is_delete_protection_enabled=True,
@@ -556,7 +556,7 @@ async def test_update_load_balancer(mock_client):
 @pytest.mark.asyncio
 async def test_update_load_balancer_minimal(mock_client):
     mock_client.update_load_balancer.return_value = MockResponse(data={})
-    res = server.update_load_balancer.fn(load_balancer_id="lb")
+    res = server.update_load_balancer(load_balancer_id="lb")
     assert res is not None
 
 
@@ -565,7 +565,7 @@ async def test_delete_load_balancer(mock_client):
     mock_resp = MagicMock()
     mock_client.delete_load_balancer.return_value = MockResponse(data=mock_resp)
 
-    result = server.delete_load_balancer.fn(load_balancer_id="lb_ocid")
+    result = server.delete_load_balancer(load_balancer_id="lb_ocid")
     mock_client.delete_load_balancer.assert_called_once_with("lb_ocid")
     assert result is not None
 
@@ -582,7 +582,7 @@ async def test_list_load_balancer_listeners(mock_client):
         data=types.SimpleNamespace(listeners={"listener1": mock_listener})
     )
 
-    result = server.list_load_balancer_listeners.fn(
+    result = server.list_load_balancer_listeners(
         load_balancer_id="lb_ocid", limit=None
     )
     mock_client.get_load_balancer.assert_called_once()
@@ -595,7 +595,7 @@ async def test_create_load_balancer_listener(mock_client):
     mock_resp = MagicMock()
     mock_client.create_listener.return_value = MockResponse(data=mock_resp)
 
-    result = server.create_load_balancer_listener.fn(
+    result = server.create_load_balancer_listener(
         load_balancer_id="lb_ocid",
         name="listener1",
         default_backend_set_name="backendset1",
@@ -613,7 +613,7 @@ async def test_get_load_balancer_listener(mock_client):
         data=types.SimpleNamespace(listeners={"listener1": mock_listener})
     )
 
-    result = server.get_load_balancer_listener.fn(
+    result = server.get_load_balancer_listener(
         load_balancer_id="lb_ocid", listener_name="listener1"
     )
     mock_client.get_load_balancer.assert_called_once()
@@ -625,7 +625,7 @@ async def test_update_load_balancer_listener(mock_client):
     mock_resp = MagicMock()
     mock_client.update_listener.return_value = MockResponse(data=mock_resp)
 
-    result = server.update_load_balancer_listener.fn(
+    result = server.update_load_balancer_listener(
         load_balancer_id="lb_ocid",
         listener_name="listener1",
         default_backend_set_name="backendset2",
@@ -639,7 +639,7 @@ async def test_update_load_balancer_listener(mock_client):
 @pytest.mark.asyncio
 async def test_update_load_balancer_listener_no_optional(mock_client):
     mock_client.update_listener.return_value = MockResponse(data={})
-    res = server.update_load_balancer_listener.fn(
+    res = server.update_load_balancer_listener(
         load_balancer_id="lb_ocid", listener_name="l1"
     )
     assert res is not None
@@ -650,7 +650,7 @@ async def test_delete_load_balancer_listener(mock_client):
     mock_resp = MagicMock()
     mock_client.delete_listener.return_value = MockResponse(data=mock_resp)
 
-    result = server.delete_load_balancer_listener.fn(
+    result = server.delete_load_balancer_listener(
         load_balancer_id="lb_ocid", listener_name="listener1"
     )
     mock_client.delete_listener.assert_called_once_with("lb_ocid", "listener1")
@@ -667,7 +667,7 @@ async def test_list_load_balancer_backend_sets(mock_client):
     mock_bs = types.SimpleNamespace(name="backendset1")
     mock_client.list_backend_sets.return_value = MockResponse(data=[mock_bs])
 
-    result = server.list_load_balancer_backend_sets.fn(
+    result = server.list_load_balancer_backend_sets(
         load_balancer_id="lb_ocid", limit=None
     )
     mock_client.list_backend_sets.assert_called_once_with("lb_ocid")
@@ -680,7 +680,7 @@ async def test_create_load_balancer_backend_set(mock_client):
     mock_resp = MagicMock()
     mock_client.create_backend_set.return_value = MockResponse(data=mock_resp)
 
-    result = server.create_load_balancer_backend_set.fn(
+    result = server.create_load_balancer_backend_set(
         load_balancer_id="lb_ocid",
         name="backendset1",
         policy="ROUND_ROBIN",
@@ -694,7 +694,7 @@ async def test_create_load_balancer_backend_set(mock_client):
 @pytest.mark.asyncio
 async def test_create_backend_set_without_backends(mock_client):
     mock_client.create_backend_set.return_value = MockResponse(data={})
-    out = server.create_load_balancer_backend_set.fn(
+    out = server.create_load_balancer_backend_set(
         load_balancer_id="lb",
         name="bs",
         policy="ROUND_ROBIN",
@@ -709,7 +709,7 @@ async def test_update_load_balancer_backend_set(mock_client):
     mock_resp = MagicMock()
     mock_client.update_backend_set.return_value = MockResponse(data=mock_resp)
 
-    result = server.update_load_balancer_backend_set.fn(
+    result = server.update_load_balancer_backend_set(
         load_balancer_id="lb_ocid",
         name="backendset1",
         policy="LEAST_CONNECTIONS",
@@ -724,7 +724,7 @@ async def test_delete_load_balancer_backend_set(mock_client):
     mock_resp = MagicMock()
     mock_client.delete_backend_set.return_value = MockResponse(data=mock_resp)
 
-    result = server.delete_load_balancer_backend_set.fn(
+    result = server.delete_load_balancer_backend_set(
         load_balancer_id="lb_ocid", name="backendset1"
     )
     mock_client.delete_backend_set.assert_called_once_with("lb_ocid", "backendset1")
@@ -741,7 +741,7 @@ async def test_list_backends(mock_client):
     mock_backend = types.SimpleNamespace(name="backend1")
     mock_client.list_backends.return_value = MockResponse(data=[mock_backend])
 
-    result = server.list_backends.fn(
+    result = server.list_backends(
         load_balancer_id="lb_ocid", backend_set_name="bs1", limit=None
     )
     mock_client.list_backends.assert_called_once_with("lb_ocid", "bs1")
@@ -754,7 +754,7 @@ async def test_create_backend(mock_client):
     mock_resp = MagicMock()
     mock_client.create_backend.return_value = MockResponse(data=mock_resp)
 
-    result = server.create_backend.fn(
+    result = server.create_backend(
         load_balancer_id="lb_ocid",
         backend_set_name="bs1",
         ip_address="10.0.0.1",
@@ -769,7 +769,7 @@ async def test_get_backend(mock_client):
     mock_backend = types.SimpleNamespace(name="backend1")
     mock_client.get_backend.return_value = MockResponse(data=mock_backend)
 
-    result = server.get_backend.fn(
+    result = server.get_backend(
         load_balancer_id="lb_ocid",
         backend_set_name="bs1",
         backend_name="10.0.0.1:8080",
@@ -783,7 +783,7 @@ async def test_update_backend(mock_client):
     mock_resp = MagicMock()
     mock_client.update_backend.return_value = MockResponse(data=mock_resp)
 
-    result = server.update_backend.fn(
+    result = server.update_backend(
         load_balancer_id="lb_ocid",
         backend_set_name="bs1",
         backend_name="10.0.0.1:8080",
@@ -798,7 +798,7 @@ async def test_delete_backend(mock_client):
     mock_resp = MagicMock()
     mock_client.delete_backend.return_value = MockResponse(data=mock_resp)
 
-    result = server.delete_backend.fn(
+    result = server.delete_backend(
         load_balancer_id="lb_ocid",
         backend_set_name="bs1",
         backend_name="10.0.0.1:8080",
@@ -817,7 +817,7 @@ async def test_list_load_balancer_certificates(mock_client):
     mock_cert = types.SimpleNamespace(certificate_name="cert1")
     mock_client.list_certificates.return_value = MockResponse(data=[mock_cert])
 
-    result = server.list_load_balancer_certificates.fn(
+    result = server.list_load_balancer_certificates(
         load_balancer_id="lb_ocid", limit=None
     )
     mock_client.list_certificates.assert_called_once_with("lb_ocid")
@@ -830,7 +830,7 @@ async def test_create_load_balancer_certificate(mock_client):
     mock_resp = MagicMock()
     mock_client.create_certificate.return_value = MockResponse(data=mock_resp)
 
-    result = server.create_load_balancer_certificate.fn(
+    result = server.create_load_balancer_certificate(
         load_balancer_id="lb_ocid",
         certificate_name="cert1",
         public_certificate="---PUBLIC---",
@@ -845,7 +845,7 @@ async def test_delete_load_balancer_certificate(mock_client):
     mock_resp = MagicMock()
     mock_client.delete_certificate.return_value = MockResponse(data=mock_resp)
 
-    result = server.delete_load_balancer_certificate.fn(
+    result = server.delete_load_balancer_certificate(
         load_balancer_id="lb_ocid", certificate_name="cert1"
     )
     mock_client.delete_certificate.assert_called_once_with("lb_ocid", "cert1")
@@ -861,7 +861,7 @@ async def test_delete_load_balancer_certificate(mock_client):
 async def test_list_ssl_cipher_suites(mock_client):
     mock_suite = types.SimpleNamespace(name="suite1")
     mock_client.list_ssl_cipher_suites.return_value = MockResponse(data=[mock_suite])
-    out = server.list_ssl_cipher_suites.fn(load_balancer_id="lb", limit=None)
+    out = server.list_ssl_cipher_suites(load_balancer_id="lb", limit=None)
     mock_client.list_ssl_cipher_suites.assert_called_once_with("lb")
     assert [s.name for s in out] == ["suite1"]
 
@@ -869,7 +869,7 @@ async def test_list_ssl_cipher_suites(mock_client):
 @pytest.mark.asyncio
 async def test_create_ssl_cipher_suite(mock_client):
     mock_client.create_ssl_cipher_suite.return_value = MockResponse(data={})
-    res = server.create_ssl_cipher_suite.fn(
+    res = server.create_ssl_cipher_suite(
         load_balancer_id="lb", name="suite1", ciphers=["TLS_AES_128_GCM_SHA256"]
     )
     assert res is not None
@@ -880,7 +880,7 @@ async def test_update_ssl_cipher_suite(mock_client):
     mock_resp = MagicMock()
     mock_client.update_ssl_cipher_suite.return_value = MockResponse(data=mock_resp)
 
-    result = server.update_ssl_cipher_suite.fn(
+    result = server.update_ssl_cipher_suite(
         load_balancer_id="lb_ocid", name="suite1", ciphers=["TLS_AES_256_GCM_SHA384"]
     )
     mock_client.update_ssl_cipher_suite.assert_called_once()
@@ -892,7 +892,7 @@ async def test_delete_ssl_cipher_suite(mock_client):
     mock_resp = MagicMock()
     mock_client.delete_ssl_cipher_suite.return_value = MockResponse(data=mock_resp)
 
-    result = server.delete_ssl_cipher_suite.fn(
+    result = server.delete_ssl_cipher_suite(
         load_balancer_id="lb_ocid", name="suite1"
     )
     mock_client.delete_ssl_cipher_suite.assert_called_once_with("lb_ocid", "suite1")
@@ -909,7 +909,7 @@ async def test_list_hostnames(mock_client):
     mock_host = types.SimpleNamespace(name="host1")
     mock_client.list_hostnames.return_value = MockResponse(data=[mock_host])
 
-    result = server.list_hostnames.fn(load_balancer_id="lb_ocid", limit=None)
+    result = server.list_hostnames(load_balancer_id="lb_ocid", limit=None)
     mock_client.list_hostnames.assert_called_once_with("lb_ocid")
     assert isinstance(result, list)
     assert result[0].name == "host1"
@@ -920,7 +920,7 @@ async def test_create_hostname(mock_client):
     mock_resp = MagicMock()
     mock_client.create_hostname.return_value = MockResponse(data=mock_resp)
 
-    result = server.create_hostname.fn(
+    result = server.create_hostname(
         load_balancer_id="lb_ocid", name="host1", hostname="app.example.com"
     )
     mock_client.create_hostname.assert_called_once()
@@ -932,7 +932,7 @@ async def test_get_hostname(mock_client):
     mock_host = types.SimpleNamespace(name="host1")
     mock_client.get_hostname.return_value = MockResponse(data=mock_host)
 
-    result = server.get_hostname.fn(load_balancer_id="lb_ocid", name="host1")
+    result = server.get_hostname(load_balancer_id="lb_ocid", name="host1")
     mock_client.get_hostname.assert_called_once_with("lb_ocid", "host1")
     assert result.name == "host1"
 
@@ -942,7 +942,7 @@ async def test_update_hostname(mock_client):
     mock_resp = MagicMock()
     mock_client.update_hostname.return_value = MockResponse(data=mock_resp)
 
-    result = server.update_hostname.fn(
+    result = server.update_hostname(
         load_balancer_id="lb_ocid", name="host1", hostname="new.example.com"
     )
     mock_client.update_hostname.assert_called_once()
@@ -954,7 +954,7 @@ async def test_delete_hostname(mock_client):
     mock_resp = MagicMock()
     mock_client.delete_hostname.return_value = MockResponse(data=mock_resp)
 
-    result = server.delete_hostname.fn(load_balancer_id="lb_ocid", name="host1")
+    result = server.delete_hostname(load_balancer_id="lb_ocid", name="host1")
     mock_client.delete_hostname.assert_called_once_with("lb_ocid", "host1")
     assert result is not None
 
@@ -969,7 +969,7 @@ async def test_list_rule_sets(mock_client):
     mock_rs = types.SimpleNamespace(name="ruleset1")
     mock_client.list_rule_sets.return_value = MockResponse(data=[mock_rs])
 
-    result = server.list_rule_sets.fn(load_balancer_id="lb_ocid", limit=None)
+    result = server.list_rule_sets(load_balancer_id="lb_ocid", limit=None)
     mock_client.list_rule_sets.assert_called_once_with("lb_ocid")
     assert isinstance(result, list)
     assert result[0].name == "ruleset1"
@@ -980,7 +980,7 @@ async def test_create_rule_set(mock_client):
     mock_resp = MagicMock()
     mock_client.create_rule_set.return_value = MockResponse(data=mock_resp)
 
-    result = server.create_rule_set.fn(
+    result = server.create_rule_set(
         load_balancer_id="lb_ocid", name="ruleset1", items=[]
     )
     mock_client.create_rule_set.assert_called_once()
@@ -992,7 +992,7 @@ async def test_get_rule_set(mock_client):
     mock_rs = types.SimpleNamespace(name="ruleset1")
     mock_client.get_rule_set.return_value = MockResponse(data=mock_rs)
 
-    result = server.get_rule_set.fn(load_balancer_id="lb_ocid", name="ruleset1")
+    result = server.get_rule_set(load_balancer_id="lb_ocid", name="ruleset1")
     mock_client.get_rule_set.assert_called_once_with("lb_ocid", "ruleset1")
     assert result.name == "ruleset1"
 
@@ -1002,7 +1002,7 @@ async def test_update_rule_set(mock_client):
     mock_resp = MagicMock()
     mock_client.update_rule_set.return_value = MockResponse(data=mock_resp)
 
-    result = server.update_rule_set.fn(
+    result = server.update_rule_set(
         load_balancer_id="lb_ocid", name="ruleset1", items=[]
     )
     mock_client.update_rule_set.assert_called_once()
@@ -1014,7 +1014,7 @@ async def test_delete_rule_set(mock_client):
     mock_resp = MagicMock()
     mock_client.delete_rule_set.return_value = MockResponse(data=mock_resp)
 
-    result = server.delete_rule_set.fn(load_balancer_id="lb_ocid", name="ruleset1")
+    result = server.delete_rule_set(load_balancer_id="lb_ocid", name="ruleset1")
     mock_client.delete_rule_set.assert_called_once_with("lb_ocid", "ruleset1")
     assert result is not None
 
@@ -1029,7 +1029,7 @@ async def test_list_routing_policies(mock_client):
     mock_rp = types.SimpleNamespace(name="policy1")
     mock_client.list_routing_policies.return_value = MockResponse(data=[mock_rp])
 
-    result = server.list_routing_policies.fn(load_balancer_id="lb_ocid", limit=None)
+    result = server.list_routing_policies(load_balancer_id="lb_ocid", limit=None)
     mock_client.list_routing_policies.assert_called_once_with(
         "lb_ocid", limit=None, page=None
     )
@@ -1040,7 +1040,7 @@ async def test_list_routing_policies(mock_client):
 @pytest.mark.asyncio
 async def test_create_routing_policy(mock_client):
     mock_client.create_routing_policy.return_value = MockResponse(data={})
-    out = server.create_routing_policy.fn(
+    out = server.create_routing_policy(
         load_balancer_id="lb", name="rp1", condition_language_version="V1", rules=[]
     )
     assert out is not None
@@ -1049,7 +1049,7 @@ async def test_create_routing_policy(mock_client):
 @pytest.mark.asyncio
 async def test_update_backend_all_flags(mock_client):
     mock_client.update_backend.return_value = MockResponse(data={})
-    out = server.update_backend.fn(
+    out = server.update_backend(
         load_balancer_id="lb",
         backend_set_name="bs",
         backend_name="1.1.1.1:80",
@@ -1067,7 +1067,7 @@ async def test_get_routing_policy(mock_client):
     mock_rp = types.SimpleNamespace(name="policy1")
     mock_client.get_routing_policy.return_value = MockResponse(data=mock_rp)
 
-    result = server.get_routing_policy.fn(load_balancer_id="lb_ocid", name="policy1")
+    result = server.get_routing_policy(load_balancer_id="lb_ocid", name="policy1")
     mock_client.get_routing_policy.assert_called_once_with("lb_ocid", "policy1")
     assert result.name == "policy1"
 
@@ -1077,7 +1077,7 @@ async def test_update_routing_policy(mock_client):
     mock_resp = MagicMock()
     mock_client.update_routing_policy.return_value = MockResponse(data=mock_resp)
 
-    result = server.update_routing_policy.fn(
+    result = server.update_routing_policy(
         load_balancer_id="lb_ocid",
         name="policy1",
         condition_language_version=None,
@@ -1092,7 +1092,7 @@ async def test_delete_routing_policy(mock_client):
     mock_resp = MagicMock()
     mock_client.delete_routing_policy.return_value = MockResponse(data=mock_resp)
 
-    result = server.delete_routing_policy.fn(load_balancer_id="lb_ocid", name="policy1")
+    result = server.delete_routing_policy(load_balancer_id="lb_ocid", name="policy1")
     mock_client.delete_routing_policy.assert_called_once_with("lb_ocid", "policy1")
     assert result is not None
 
@@ -1107,7 +1107,7 @@ async def test_get_load_balancer_health(mock_client):
     mock_health = types.SimpleNamespace(status="OK")
     mock_client.get_load_balancer_health.return_value = MockResponse(data=mock_health)
 
-    result = server.get_load_balancer_health.fn(load_balancer_id="lb_ocid")
+    result = server.get_load_balancer_health(load_balancer_id="lb_ocid")
     mock_client.get_load_balancer_health.assert_called_once_with("lb_ocid")
     assert result.status == "OK"
 
@@ -1117,7 +1117,7 @@ async def test_get_backend_set_health(mock_client):
     mock_h = types.SimpleNamespace(status="WARNING")
     mock_client.get_backend_set_health.return_value = MockResponse(data=mock_h)
 
-    result = server.get_backend_set_health.fn(
+    result = server.get_backend_set_health(
         load_balancer_id="lb_ocid", backend_set_name="bs1"
     )
     mock_client.get_backend_set_health.assert_called_once_with("lb_ocid", "bs1")
@@ -1129,7 +1129,7 @@ async def test_get_backend_health(mock_client):
     mock_h = types.SimpleNamespace(status="CRITICAL")
     mock_client.get_backend_health.return_value = MockResponse(data=mock_h)
 
-    result = server.get_backend_health.fn(
+    result = server.get_backend_health(
         load_balancer_id="lb_ocid", backend_set_name="bs1", backend_name="10.0.0.1:8080"
     )
     mock_client.get_backend_health.assert_called_once_with(
@@ -1143,7 +1143,7 @@ async def test_list_load_balancer_healths(mock_client):
     mock_sum = types.SimpleNamespace(load_balancer_id="lb_ocid")
     mock_client.list_load_balancer_healths.return_value = MockResponse(data=[mock_sum])
 
-    result = server.list_load_balancer_healths.fn(
+    result = server.list_load_balancer_healths(
         compartment_id="compartment_ocid", limit=None
     )
     mock_client.list_load_balancer_healths.assert_called_once()
@@ -1156,7 +1156,7 @@ async def test_list_load_balancer_work_requests(mock_client):
     mock_wr = types.SimpleNamespace(id="wr_ocid")
     mock_client.list_work_requests.return_value = MockResponse(data=[mock_wr])
 
-    result = server.list_load_balancer_work_requests.fn(
+    result = server.list_load_balancer_work_requests(
         load_balancer_id="lb_ocid", limit=None
     )
     mock_client.list_work_requests.assert_called_once()
@@ -1169,7 +1169,7 @@ async def test_get_load_balancer_work_request(mock_client):
     mock_wr = types.SimpleNamespace(id="wr_ocid")
     mock_client.get_work_request.return_value = MockResponse(data=mock_wr)
 
-    result = server.get_load_balancer_work_request.fn(work_request_id="wr_ocid")
+    result = server.get_load_balancer_work_request(work_request_id="wr_ocid")
     mock_client.get_work_request.assert_called_once_with("wr_ocid")
     assert result.id == "wr_ocid"
 
@@ -1186,10 +1186,10 @@ async def test_error_paths_all_tools(monkeypatch):
     monkeypatch.setattr(server, "get_load_balancer_client", _raise)
 
     cases = [
-        (server.list_load_balancers.fn, {"compartment_id": "c"}),
-        (server.get_load_balancer.fn, {"load_balancer_id": "lb"}),
+        (server.list_load_balancers, {"compartment_id": "c"}),
+        (server.get_load_balancer, {"load_balancer_id": "lb"}),
         (
-            server.create_load_balancer.fn,
+            server.create_load_balancer,
             {
                 "compartment_id": "c",
                 "display_name": "d",
@@ -1197,16 +1197,16 @@ async def test_error_paths_all_tools(monkeypatch):
                 "subnet_ids": ["s1"],
             },
         ),
-        (server.update_load_balancer.fn, {"load_balancer_id": "lb"}),
-        (server.update_load_balancer_shape.fn, {"load_balancer_id": "lb"}),
-        (server.delete_load_balancer.fn, {"load_balancer_id": "lb"}),
+        (server.update_load_balancer, {"load_balancer_id": "lb"}),
+        (server.update_load_balancer_shape, {"load_balancer_id": "lb"}),
+        (server.delete_load_balancer, {"load_balancer_id": "lb"}),
         (
-            server.update_load_balancer_network_security_groups.fn,
+            server.update_load_balancer_network_security_groups,
             {"load_balancer_id": "lb"},
         ),
-        (server.list_load_balancer_listeners.fn, {"load_balancer_id": "lb"}),
+        (server.list_load_balancer_listeners, {"load_balancer_id": "lb"}),
         (
-            server.create_load_balancer_listener.fn,
+            server.create_load_balancer_listener,
             {
                 "load_balancer_id": "lb",
                 "name": "n",
@@ -1216,24 +1216,24 @@ async def test_error_paths_all_tools(monkeypatch):
             },
         ),
         (
-            server.get_load_balancer_listener.fn,
+            server.get_load_balancer_listener,
             {"load_balancer_id": "lb", "listener_name": "n"},
         ),
         (
-            server.update_load_balancer_listener.fn,
+            server.update_load_balancer_listener,
             {"load_balancer_id": "lb", "listener_name": "n"},
         ),
         (
-            server.delete_load_balancer_listener.fn,
+            server.delete_load_balancer_listener,
             {"load_balancer_id": "lb", "listener_name": "n"},
         ),
-        (server.list_load_balancer_backend_sets.fn, {"load_balancer_id": "lb"}),
+        (server.list_load_balancer_backend_sets, {"load_balancer_id": "lb"}),
         (
-            server.get_load_balancer_backend_set.fn,
+            server.get_load_balancer_backend_set,
             {"load_balancer_id": "lb", "backend_set_name": "bs"},
         ),
         (
-            server.create_load_balancer_backend_set.fn,
+            server.create_load_balancer_backend_set,
             {
                 "load_balancer_id": "lb",
                 "name": "bs",
@@ -1242,19 +1242,19 @@ async def test_error_paths_all_tools(monkeypatch):
             },
         ),
         (
-            server.update_load_balancer_backend_set.fn,
+            server.update_load_balancer_backend_set,
             {"load_balancer_id": "lb", "name": "bs"},
         ),
         (
-            server.delete_load_balancer_backend_set.fn,
+            server.delete_load_balancer_backend_set,
             {"load_balancer_id": "lb", "name": "bs"},
         ),
         (
-            server.list_backends.fn,
+            server.list_backends,
             {"load_balancer_id": "lb", "backend_set_name": "bs"},
         ),
         (
-            server.create_backend.fn,
+            server.create_backend,
             {
                 "load_balancer_id": "lb",
                 "backend_set_name": "bs",
@@ -1263,7 +1263,7 @@ async def test_error_paths_all_tools(monkeypatch):
             },
         ),
         (
-            server.get_backend.fn,
+            server.get_backend,
             {
                 "load_balancer_id": "lb",
                 "backend_set_name": "bs",
@@ -1271,7 +1271,7 @@ async def test_error_paths_all_tools(monkeypatch):
             },
         ),
         (
-            server.update_backend.fn,
+            server.update_backend,
             {
                 "load_balancer_id": "lb",
                 "backend_set_name": "bs",
@@ -1279,16 +1279,16 @@ async def test_error_paths_all_tools(monkeypatch):
             },
         ),
         (
-            server.delete_backend.fn,
+            server.delete_backend,
             {
                 "load_balancer_id": "lb",
                 "backend_set_name": "bs",
                 "backend_name": "1.1.1.1:80",
             },
         ),
-        (server.list_load_balancer_certificates.fn, {"load_balancer_id": "lb"}),
+        (server.list_load_balancer_certificates, {"load_balancer_id": "lb"}),
         (
-            server.create_load_balancer_certificate.fn,
+            server.create_load_balancer_certificate,
             {
                 "load_balancer_id": "lb",
                 "certificate_name": "c",
@@ -1297,93 +1297,93 @@ async def test_error_paths_all_tools(monkeypatch):
             },
         ),
         (
-            server.delete_load_balancer_certificate.fn,
+            server.delete_load_balancer_certificate,
             {"load_balancer_id": "lb", "certificate_name": "c"},
         ),
-        (server.list_ssl_cipher_suites.fn, {"load_balancer_id": "lb"}),
+        (server.list_ssl_cipher_suites, {"load_balancer_id": "lb"}),
         (
-            server.create_ssl_cipher_suite.fn,
+            server.create_ssl_cipher_suite,
             {"load_balancer_id": "lb", "name": "n", "ciphers": ["c"]},
         ),
         (
-            server.get_ssl_cipher_suite.fn,
+            server.get_ssl_cipher_suite,
             {"load_balancer_id": "lb", "name": "n"},
         ),
         (
-            server.update_ssl_cipher_suite.fn,
+            server.update_ssl_cipher_suite,
             {"load_balancer_id": "lb", "name": "n"},
         ),
         (
-            server.delete_ssl_cipher_suite.fn,
+            server.delete_ssl_cipher_suite,
             {"load_balancer_id": "lb", "name": "n"},
         ),
-        (server.list_hostnames.fn, {"load_balancer_id": "lb"}),
+        (server.list_hostnames, {"load_balancer_id": "lb"}),
         (
-            server.create_hostname.fn,
+            server.create_hostname,
             {"load_balancer_id": "lb", "name": "h", "hostname": "x"},
         ),
         (
-            server.get_hostname.fn,
+            server.get_hostname,
             {"load_balancer_id": "lb", "name": "h"},
         ),
         (
-            server.update_hostname.fn,
+            server.update_hostname,
             {"load_balancer_id": "lb", "name": "h"},
         ),
         (
-            server.delete_hostname.fn,
+            server.delete_hostname,
             {"load_balancer_id": "lb", "name": "h"},
         ),
-        (server.list_rule_sets.fn, {"load_balancer_id": "lb"}),
+        (server.list_rule_sets, {"load_balancer_id": "lb"}),
         (
-            server.create_rule_set.fn,
+            server.create_rule_set,
             {"load_balancer_id": "lb", "name": "rs"},
         ),
         (
-            server.get_rule_set.fn,
+            server.get_rule_set,
             {"load_balancer_id": "lb", "name": "rs"},
         ),
         (
-            server.update_rule_set.fn,
+            server.update_rule_set,
             {"load_balancer_id": "lb", "name": "rs"},
         ),
         (
-            server.delete_rule_set.fn,
+            server.delete_rule_set,
             {"load_balancer_id": "lb", "name": "rs"},
         ),
-        (server.list_routing_policies.fn, {"load_balancer_id": "lb"}),
+        (server.list_routing_policies, {"load_balancer_id": "lb"}),
         (
-            server.create_routing_policy.fn,
+            server.create_routing_policy,
             {"load_balancer_id": "lb", "name": "rp"},
         ),
         (
-            server.get_routing_policy.fn,
+            server.get_routing_policy,
             {"load_balancer_id": "lb", "name": "rp"},
         ),
         (
-            server.update_routing_policy.fn,
+            server.update_routing_policy,
             {"load_balancer_id": "lb", "name": "rp"},
         ),
         (
-            server.delete_routing_policy.fn,
+            server.delete_routing_policy,
             {"load_balancer_id": "lb", "name": "rp"},
         ),
-        (server.get_load_balancer_health.fn, {"load_balancer_id": "lb"}),
+        (server.get_load_balancer_health, {"load_balancer_id": "lb"}),
         (
-            server.get_backend_set_health.fn,
+            server.get_backend_set_health,
             {"load_balancer_id": "lb", "backend_set_name": "bs"},
         ),
         (
-            server.get_backend_health.fn,
+            server.get_backend_health,
             {
                 "load_balancer_id": "lb",
                 "backend_set_name": "bs",
                 "backend_name": "1.1.1.1:80",
             },
         ),
-        (server.list_load_balancer_healths.fn, {"compartment_id": "c"}),
-        (server.list_load_balancer_work_requests.fn, {"load_balancer_id": "lb"}),
-        (server.get_load_balancer_work_request.fn, {"work_request_id": "wr"}),
+        (server.list_load_balancer_healths, {"compartment_id": "c"}),
+        (server.list_load_balancer_work_requests, {"load_balancer_id": "lb"}),
+        (server.get_load_balancer_work_request, {"work_request_id": "wr"}),
     ]
 
     for func, kwargs in cases:
@@ -1395,7 +1395,7 @@ async def test_error_paths_all_tools(monkeypatch):
 async def test_get_load_balancer_backend_set(mock_client):
     mock_bs = types.SimpleNamespace(name="bs1")
     mock_client.get_backend_set.return_value = MockResponse(data=mock_bs)
-    res = server.get_load_balancer_backend_set.fn(
+    res = server.get_load_balancer_backend_set(
         load_balancer_id="lb_ocid", backend_set_name="bs1"
     )
     mock_client.get_backend_set.assert_called_once_with("lb_ocid", "bs1")
@@ -1406,7 +1406,7 @@ async def test_get_load_balancer_backend_set(mock_client):
 async def test_get_ssl_cipher_suite(mock_client):
     mock_s = types.SimpleNamespace(name="s1", ciphers=["C1"])
     mock_client.get_ssl_cipher_suite.return_value = MockResponse(data=mock_s)
-    res = server.get_ssl_cipher_suite.fn(load_balancer_id="lb_ocid", name="s1")
+    res = server.get_ssl_cipher_suite(load_balancer_id="lb_ocid", name="s1")
     mock_client.get_ssl_cipher_suite.assert_called_once_with("lb_ocid", "s1")
     assert res.name == "s1"
 
@@ -1414,7 +1414,7 @@ async def test_get_ssl_cipher_suite(mock_client):
 @pytest.mark.asyncio
 async def test_create_backend_set_full_options(mock_client):
     mock_client.create_backend_set.return_value = MockResponse(data={})
-    res = server.create_load_balancer_backend_set.fn(
+    res = server.create_load_balancer_backend_set(
         load_balancer_id="lb",
         name="bs",
         policy="ROUND_ROBIN",
@@ -1472,7 +1472,7 @@ async def test_update_backend_set_full_options(mock_client):
     mock_client.get_backend_set.return_value = MockResponse(data=current_bs)
     mock_client.update_backend_set.return_value = MockResponse(data={})
 
-    res = server.update_load_balancer_backend_set.fn(
+    res = server.update_load_balancer_backend_set(
         load_balancer_id="lb",
         name="bs",
         policy="LEAST_CONNECTIONS",
@@ -1538,7 +1538,7 @@ async def test_update_backend_set_preserve_existing(mock_client):
     mock_client.update_backend_set.return_value = MockResponse(data={})
 
     # Do not pass backends or HC details so preservation paths are used
-    out = server.update_load_balancer_backend_set.fn(
+    out = server.update_load_balancer_backend_set(
         load_balancer_id="lb", name="bs", backends=None
     )
     assert out is not None
