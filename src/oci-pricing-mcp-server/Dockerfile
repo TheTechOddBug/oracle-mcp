@@ -1,5 +1,6 @@
 FROM python:3.11-slim
 WORKDIR /app
 COPY . /app
-RUN pip install -U pip && pip install fastmcp httpx babel pycountry
-CMD ["python", "oci-pricing-mcp-server.py"]
+RUN pip install --no-cache-dir uv && \
+    uv --no-cache sync --locked --all-extras
+CMD ["uv", "run",  "oci-pricing-mcp-server.py"]

@@ -218,5 +218,5 @@ docker run --rm -it \
   -e PROBE_SKU_OK=B93113 \
   -e PROBE_CCY=JPY \
   oci-pricing-mcp:dev \
-  python -m unittest discover -s . -p 'test_*.py' -v
+  uv run python -m unittest discover -s . -p 'test_*.py' -v
 ```
